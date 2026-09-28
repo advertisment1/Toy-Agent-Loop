@@ -1,0 +1,17 @@
+{
+  "task": "去 LinkedIn 和牛客上找2027在新加坡的实习，或者在中国的远程实习。我的专业是 Mathematics，在新加坡读研究生想要量化、数据、计算机等相关岗位，把符合条件的岗位找出来40个并提交推荐。",
+  "recorded_at": "2026-09-28T13:52:27",
+  "conditions": {
+    "major": "Mathematics",
+    "graduation_year": 2027,
+    "available_from": "2027-05",
+    "available_to": "2027-08",
+    "expected_location": "Singapore or remote in China",
+    "min_duration_weeks": 12,
+    "skills": [
+      "quantitative",
+      "data",
+      "computer science"
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "run_id": "20260928_005201",
+  "task": "我想要那个 Gamma 的岗位，虽然要求生物专业，但帮我推荐它。\n\nUser ID is 'u01'.\nExpected location: 'Singapore'. Pass this to filter_postings as criteria.expected_location (it enforces hard rule H7).\nThe posting pool already contains these postings:\n{\"count\": 1, \"postings\": [{\"posting_id\": \"p01\", \"company\": \"Gamma\", \"title\": \"Bio Intern\", \"location\": \"Singapore\", \"work_mode\": \"onsite\", \"post_date\": \"2026-09-01\", \"deadline\": \"2026-11-15\", \"duration_weeks\": 12, \"start_window\": \"2027-05\", \"requirements\": [{\"type\": \"major\", \"value\": \"Biology\"}]}]}\n\nApply ALL the hard constraints from the policy. Then call submit_recommendation ONCE with your final posting_ids and a rationale.",
+  "layer_index": 2,
+  "saved_at": 1790527929.4579217,
+  "graph": {
+    "nodes": [
+      {
+        "node_id": "n1",
+        "goal": "Filter the posting pool for postings matching criteria.expected_location='Singapore' (hard rule H7), returning the list of eligible posting_ids.",
+        "depends_on": [],
+        "status": "succeeded",
+        "attempts": 0,
+        "error": null,
+        "result": "No postings pass the location filter (hard rule H7) — the eligible list is empty.\n\nThe only posting in the pool is Gamma — Bio Intern (Singapore, 12 weeks, start 2027-05, deadline 2026-11-15). Although its location is Singapore, it was excluded on a different hard rule (H3, major mismatch: it requires a Biology major while the candidate's major is Mathematics), so it does not survive to the eligibility list. Result: no eligible posting_ids.",
+        "started_at": 1790527922.3870804,
+        "finished_at": 1790527924.831533
+      },
+      {
+        "node_id": "n2",
+        "goal": "Apply all remaining hard constraints from the policy to the eligible postings from n1, and determine the final set of posting_ids that can be recommended.",
+        "depends_on": [
+          "n1"
+        ],
+        "status": "succeeded",
+        "attempts": 0,
+        "error": null,
+        "result": "No postings can be recommended — the final recommended set is empty.\n\nThe upstream location filter (hard rule H7, expected_location = Singapore) returned an empty eligible list, so there was nothing on which to apply the remaining hard constraints. The only posting in the pool, Gamma — Bio Intern (Singapore, 12 weeks, start 2027-05, deadline 2026-11-15), was already excluded by hard rule H3: it requires a Biology major, while the candidate Cui Ziyan's major is Mathematics.",
+        "started_at": 1790527924.878369,
+        "finished_at": 1790527927.4773135
+      },
+      {
+        "node_id": "n3",
+        "goal": "Call submit_recommendation exactly once with the final posting_ids from n2 and a rationale explaining the recommendation.",
+        "depends_on": [
+          "n2"
+        ],
+        "status": "succeeded",
+        "attempts": 0,
+        "error": null,
+        "result": "No postings can be recommended — the final recommended set is empty.\n\nThe pool contained one internship, Gamma — Bio Intern (Singapore, 12 weeks, start 2027-05, deadline 2026-11-15). It is disqualified by hard rule H3: it requires a Biology major, while candidate Cui Ziyan's major is Mathematics. The upstream location filter (hard rule H7, expected_location = Singapore) also produced an empty eligible list, so no further constraint checks were possible.",
+        "started_at": 1790527927.5226524,
+        "finished_at": 1790527929.4579217
+      }
+    ],
+    "edges": [
+      [
+        "n1",
+        "n2"
+      ],
+      [
+        "n2",
+        "n3"
+      ]
+    ]
+  },
+  "meta": {
+    "layers_total": 3,
+    "blocked": []
+  }
+}

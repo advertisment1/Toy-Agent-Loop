@@ -1,0 +1,16 @@
+# 环境变量与密钥，绝不提交到 GitHub
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 运行产物
+logs/
+*.log
+output/
