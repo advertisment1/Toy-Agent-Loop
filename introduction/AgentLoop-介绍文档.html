@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实习搜索 Agent 的循环结构介绍</title>
+<style>
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: #FAFAF8;
+    color: #2C2C2A;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+    font-weight: 400;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 56px 40px 96px; }
+
+  .meta {
+    border: 1px solid #E5E3DD;
+    border-radius: 12px;
+    background: #FFFFFF;
+    padding: 18px 22px;
+    margin: 0 0 32px;
+    font-size: 14px;
+    line-height: 1.9;
+  }
+  .meta span { color: #5F5E5A; display: inline-block; min-width: 84px; }
+  .meta code { font-size: 13px; }
+
+  h1 { font-size: 27px; font-weight: 600; line-height: 1.4; margin: 0 0 10px; letter-spacing: -0.2px; }
+  .sub { color: #5F5E5A; font-size: 14px; margin: 0 0 28px; }
+
+  h2 {
+    font-size: 20px; font-weight: 600; line-height: 1.5;
+    margin: 52px 0 16px; padding-bottom: 10px;
+    border-bottom: 1px solid #E5E3DD;
+  }
+  h3 { font-size: 16px; font-weight: 500; margin: 32px 0 12px; }
+  p { margin: 0 0 14px; }
+  strong { font-weight: 600; }
+
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin: 4px 0; }
+
+  hr { border: 0; border-top: 1px solid #E5E3DD; margin: 0; }
+
+  code {
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    background: #F1EFE8;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 13px;
+    color: #2C2C2A;
+  }
+  pre {
+    background: #F7F6F2;
+    border: 1px solid #E5E3DD;
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+    line-height: 1.65;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 20px;
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+  th, td { border: 1px solid #E5E3DD; padding: 9px 13px; text-align: left; vertical-align: top; }
+  th { background: #F1EFE8; font-weight: 600; white-space: nowrap; }
+  td code { font-size: 12.5px; }
+
+  figure {
+    margin: 0 0 26px;
+    border: 1px solid #E5E3DD;
+    border-radius: 12px;
+    background: #FFFFFF;
+    padding: 20px 20px 12px;
+  }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { color: #5F5E5A; font-size: 12.5px; text-align: center; margin-top: 10px; }
+
+  blockquote {
+    margin: 0 0 18px;
+    padding: 12px 18px;
+    border-left: 3px solid #B4B2A9;
+    background: #F7F6F2;
+    border-radius: 0 8px 8px 0;
+    color: #444441;
+    font-size: 14px;
+  }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  .note {
+    border: 1px solid #B5D4F4;
+    background: #E6F1FB;
+    color: #0C447C;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 0 0 20px;
+    font-size: 14px;
+  }
+  .note p:last-child { margin-bottom: 0; }
+
+  .toc {
+    border: 1px solid #E5E3DD;
+    border-radius: 12px;
+    background: #FFFFFF;
+    padding: 18px 24px;
+    margin: 0 0 40px;
+    font-size: 14px;
+  }
+  .toc-title { font-weight: 600; margin-bottom: 8px; color: #2C2C2A; }
+  .toc ol { margin: 0; padding-left: 22px; }
+  .toc a { color: #185FA5; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 1px solid #D3D1C7;
+    background: #F1EFE8;
+    color: #444441;
+    margin-right: 6px;
+  }
+
+  @media print {
+    body { background: #FFFFFF; }
+    .wrap { max-width: none; padding: 0; }
+    h2 { page-break-after: avoid; }
+    figure, table, pre { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>实习搜索 Agent 的循环结构介绍</h1>
+<p class="sub">一台会自己调工具的机器，是怎么转起来、又怎么处理失败的</p>
+
+<div class="meta">
+  <div><span>对应代码</span><code>scheduler/domain_internship_search.py</code></div>
+  <div><span>主要类</span><code>InternshipSearchAgent</code>（第 2609 行起）</div>
+  <div><span>配套文件</span><code>AgentLoop-主循环流程图.svg</code>、<code>AgentLoop-错误处理防线图.svg</code></div>
+  <div><span>文档日期</span>2026-09-28</div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">目录</div>
+  <ol>
+    <li><a href="#s1">Agent Loop 的本质</a></li>
+    <li><a href="#s2">主循环流程</a></li>
+    <li><a href="#s3">错误处理</a></li>
+    <li><a href="#s4">运行结束的三种状态</a></li>
+    <li><a href="#s5">容易误解的几个点</a></li>
+    <li><a href="#s6">代码位置索引</a></li>
+    <li><a href="#s7">怎么跑起来</a></li>
+  </ol>
+</div>
+
+<h2 id="s0">0. 一句话概括</h2>
+<p>这个 Agent 是一台<strong>转发机</strong>。它自己不判断「下一步该干什么」，只负责把模型说的话变成工具调用、再把工具的结果变回模型能读的消息，如此往复，直到模型不再要求调工具。</p>
+
+<hr>
+
+<h2 id="s1">1. Agent Loop 的本质</h2>
+
+<h3>1.1 三个角色各管什么</h3>
+<table>
+  <thead>
+    <tr><th>角色</th><th>负责</th><th>不负责</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>模型</td><td>决定下一步调哪个工具、传什么参数；决定什么时候收工</td><td>不亲自执行任何工具</td></tr>
+    <tr><td>循环（<code>run()</code>）</td><td>转发消息、执行被点名的工具、回填结果、数步数、掐表</td><td>不做任何业务判断</td></tr>
+    <tr><td>工具</td><td>按参数干活，返回结果或错误信息</td><td>不知道自己在循环里</td></tr>
+  </tbody>
+</table>
+<p><strong>核心结论：循环本身没有智能。</strong>它是一段机械的 <code>for</code>，任何「该不该重试」「该不该换个数据源」的判断都发生在模型那一侧。</p>
+
+<h3>1.2 循环住在哪里</h3>
+<p>同一份域代码，循环可以住在两个地方，这是两种不同的归属选择：</p>
+<table>
+  <thead>
+    <tr><th></th><th>框架驱动</th><th>域驱动（当前形态）</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>循环写在哪个文件</td><td><code>scheduler_skeleton.py</code> 的 <code>AgentLoop</code></td><td><code>domain_internship_search.py</code> 的 <code>InternshipSearchAgent</code></td></tr>
+    <tr><td>谁持有消息历史、轨迹、步数</td><td>框架实例</td><td>域实例</td></tr>
+    <tr><td>换一个域要改什么</td><td>只换一张工具表</td><td>重写一个类</td></tr>
+    <tr><td>域是否「纯净」</td><td>纯净（域只是环境）</td><td>不纯净（域 = 环境 + 循环）</td></tr>
+  </tbody>
+</table>
+<p>两种形态里，「下一步做什么」都是<strong>模型</strong>决定的；差别只在<strong>循环这个控制结构挂在哪个对象上</strong>。</p>
+
+<hr>
+
+<h2 id="s2">2. 主循环流程</h2>
+
+<figure>
+  <svg viewBox="0 0 680 732" role="img" xmlns="http://www.w3.org/2000/svg">
+    <title>实习搜索 agent 主循环流程</title>
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <path d="M230 684 L230 712 L70 712 L70 192 L110 192" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="150" y="698" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">下一轮</text>
+    <path d="M230 104 L230 164" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M230 220 L230 280" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M230 336 L230 396" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M230 452 L230 512" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M230 568 L230 628" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M350 192 L430 192" fill="none" stroke="#A32D2D" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M350 424 L430 424" fill="none" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M350 540 L430 540" fill="none" stroke="#A32D2D" stroke-width="0.5" stroke-dasharray="4 3"/>
+    <text x="388" y="176" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">超时</text>
+    <text x="388" y="408" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">否</text>
+    <text x="242" y="482" text-anchor="start" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">是</text>
+    <g>
+      <rect x="110" y="48" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+      <text x="230" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">① 初始化</text>
+      <text x="230" y="84" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">读 task、建工具表、读回旧条件</text>
+    </g>
+    <g>
+      <rect x="110" y="164" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+      <text x="230" y="182" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">② for step in range(MAX_STEPS)</text>
+      <text x="230" y="200" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">每轮开头先查是否已超时</text>
+    </g>
+    <g>
+      <rect x="110" y="280" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+      <text x="230" y="298" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">③ 调模型</text>
+      <text x="230" y="316" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">发出 messages 与工具表</text>
+    </g>
+    <g>
+      <rect x="110" y="396" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+      <text x="230" y="414" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">④ 模型要调工具？</text>
+      <text x="230" y="432" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">tool_calls 是否为空</text>
+    </g>
+    <g>
+      <rect x="110" y="512" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+      <text x="230" y="530" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">⑤ 执行工具</text>
+      <text x="230" y="548" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">_execute() 逐个执行</text>
+    </g>
+    <g>
+      <rect x="110" y="628" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+      <text x="230" y="646" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">⑥ 回填消息历史</text>
+      <text x="230" y="664" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">回填为 role=tool 消息</text>
+    </g>
+    <g>
+      <rect x="430" y="164" width="190" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+      <text x="525" y="182" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#791F1F">finalize('aborted')</text>
+      <text x="525" y="200" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">reason=timeout / max_steps</text>
+    </g>
+    <g>
+      <rect x="430" y="396" width="190" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+      <text x="525" y="414" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#0C447C">finalize('done')</text>
+      <text x="525" y="432" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">直接作答即最终答案</text>
+    </g>
+    <g>
+      <rect x="430" y="512" width="190" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+      <text x="525" y="530" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#791F1F">工具内部出错怎么办</text>
+      <text x="525" y="548" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">不抛异常，只回 Error 串</text>
+    </g>
+  </svg>
+  <figcaption>图 1　主循环流程：六个节点、一条回边、三个出口</figcaption>
+</figure>
+
+<h3>2.1 逐个节点说明</h3>
+<table>
+  <thead>
+    <tr><th>节点</th><th>代码位置</th><th>做什么</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>① 初始化</td><td><code>__init__</code>（2622）</td><td>把 task 原文写进 <code>DOMAIN_STATE</code>；读回上次记录的条件；建工具注册表与 schema；初始化 <code>messages</code> / <code>trace</code></td></tr>
+    <tr><td>② 循环头</td><td><code>run</code>（2770–2779）</td><td><code>for step in range(MAX_STEPS)</code>；每轮开头先检查总耗时是否超过 <code>TIMEOUT</code></td></tr>
+    <tr><td>③ 调模型</td><td><code>_call_llm</code>（2709）</td><td>把 <code>messages</code> 与工具 schema 一起发给模型，拿回一条 assistant 消息</td></tr>
+    <tr><td>④ 判断</td><td><code>run</code>（2787）</td><td>判断 <code>message.tool_calls</code> 是否为空 —— 这是循环唯一的正常出口</td></tr>
+    <tr><td>⑤ 执行工具</td><td><code>_execute</code>（2721）</td><td>按模型给的工具名去注册表里找函数，执行，把任何异常转成字符串</td></tr>
+    <tr><td>⑥ 回填历史</td><td><code>run</code>（2817–2823）</td><td>以 <code>role="tool"</code> 把结果塞回 <code>messages</code>，<code>tool_call_id</code> 与上面的调用配对</td></tr>
+  </tbody>
+</table>
+
+<h3>2.2 消息历史长什么样</h3>
+<p>每一轮循环，<code>messages</code> 稳定地按这个节奏增长：</p>
+<pre><code>[system]    AGENT_SYSTEM_PROMPT
+[user]      任务原文
+  ── 进入第 1 轮 ──
+[assistant] tool_calls: [ search_web(query="data intern", source="linkedin") ]
+[tool]      {"status":"ok","postings":[...]}      &lt;-- tool_call_id 与上面那条配对
+  ── 进入第 2 轮 ──
+[assistant] tool_calls: [ fetch_page(url="..."), fetch_page(url="...") ]
+[tool]      {"status":"ok","content":"..."}
+[tool]      {"status":"ok","content":"..."}
+  ── 若干轮之后 ──
+[assistant] content: "推荐以下岗位……"             &lt;-- 没有 tool_calls，循环结束</code></pre>
+
+<div class="note">
+  <p>有一点必须对准：<strong>模型一次可以要求调多个工具</strong>。上面第 2 轮里两个 <code>fetch_page</code> 是同一条 assistant 消息带出来的，循环会逐个执行、逐个回填，全部回填完才进入下一轮。所以「步数」数的是<strong>轮数</strong>，不是工具调用次数 —— 这也是为什么 <code>result</code> 里 <code>steps_used</code> 和 <code>tool_calls</code> 是两个不同的字段。</p>
+</div>
+
+<h3>2.3 三个出口</h3>
+<table>
+  <thead>
+    <tr><th>出口</th><th>触发位置</th><th><code>status</code></th><th><code>reason</code></th></tr>
+  </thead>
+  <tbody>
+    <tr><td>模型不再要工具</td><td>节点 ④（2787）</td><td><code>done</code></td><td><code>None</code></td></tr>
+    <tr><td>超时</td><td>节点 ②（2774）</td><td><code>aborted</code></td><td><code>timeout</code></td></tr>
+    <tr><td>步数用尽</td><td><code>for</code> 跑满后（2826）</td><td><code>aborted</code></td><td><code>max_steps</code></td></tr>
+  </tbody>
+</table>
+<p>任何一个任务能正常结束，都是走第一条路。</p>
+
+<hr>
+
+<h2 id="s3">3. 错误处理</h2>
+
+<figure>
+  <svg viewBox="0 0 680 414" role="img" xmlns="http://www.w3.org/2000/svg">
+    <title>AgentLoop 的错误处理分层</title>
+    <rect x="40" y="48" width="146" height="36" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+    <text x="113" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">防线</text>
+    <rect x="190" y="48" width="236" height="36" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+    <text x="308" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">什么会出错</text>
+    <rect x="430" y="48" width="210" height="36" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+    <text x="535" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">怎么处理</text>
+
+    <rect x="40" y="90" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="113" y="108" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">域工具内部</text>
+    <text x="113" y="126" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">第 1 道</text>
+    <rect x="190" y="90" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+    <text x="308" y="108" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;fill:#791F1F">参数非法、session 或岗位找不到</text>
+    <text x="308" y="126" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">网络抓取失败</text>
+    <rect x="430" y="90" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="535" y="108" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">返回 status=error</text>
+    <text x="535" y="126" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">不抛异常</text>
+
+    <rect x="40" y="152" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="113" y="170" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">循环 _execute</text>
+    <text x="113" y="188" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">第 2 道</text>
+    <rect x="190" y="152" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+    <text x="308" y="170" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;fill:#791F1F">工具名幻觉、参数类型不符</text>
+    <text x="308" y="188" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">工具内部真的抛了异常</text>
+    <rect x="430" y="152" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="535" y="170" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">包成 Error 字符串</text>
+    <text x="535" y="188" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">模型自己重规划</text>
+
+    <rect x="40" y="214" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="113" y="232" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">参数解析</text>
+    <text x="113" y="250" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">第 3 道</text>
+    <rect x="190" y="214" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+    <text x="308" y="232" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;fill:#791F1F">arguments 不是合法 JSON</text>
+    <text x="308" y="250" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">模型吐出的参数被截断</text>
+    <rect x="430" y="214" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="535" y="232" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">降级成空字典</text>
+    <text x="535" y="250" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">交给第 2 道报错</text>
+
+    <rect x="40" y="276" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="113" y="294" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">保险丝</text>
+    <text x="113" y="312" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">第 4 道</text>
+    <rect x="190" y="276" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+    <text x="308" y="294" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;fill:#791F1F">超过 40 步</text>
+    <text x="308" y="312" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">或总耗时超过 600 秒</text>
+    <rect x="430" y="276" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+    <text x="535" y="294" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">status=aborted</text>
+    <text x="535" y="312" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#185FA5">带 reason 说明原因</text>
+
+    <rect x="40" y="338" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+    <text x="113" y="356" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">客户端创建</text>
+    <text x="113" y="374" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">循环之外</text>
+    <rect x="190" y="338" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+    <text x="308" y="356" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;fill:#791F1F">环境变量里没有 API key</text>
+    <text x="308" y="374" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#A32D2D">配置层面的错误</text>
+    <rect x="430" y="338" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+    <text x="535" y="356" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">RuntimeError 抛出</text>
+    <text x="535" y="374" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;fill:#5F5E5A">run() 根本不启动</text>
+  </svg>
+  <figcaption>图 2　错误处理五道防线：前四道在循环内消化，第五道在循环外抛出</figcaption>
+</figure>
+
+<h3>3.1 五道防线</h3>
+<table>
+  <thead>
+    <tr><th>防线</th><th>什么会出错</th><th>怎么处理</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>第 1 道：域工具内部</td><td>参数非法、<code>session_id</code> 或 <code>posting_id</code> 找不到、网络抓取失败</td><td>返回 <code>{"status":"error","message":...}</code>，<strong>不抛异常</strong></td></tr>
+    <tr><td>第 2 道：循环 <code>_execute</code></td><td>工具名幻觉、参数类型不符、工具内部真的抛了</td><td>包成 <code>Error: ...</code> 字符串回给模型</td></tr>
+    <tr><td>第 3 道：参数解析</td><td><code>tool_calls</code> 的 <code>arguments</code> 不是合法 JSON</td><td>降级成 <code>{}</code>，再由第 2 道接住报错</td></tr>
+    <tr><td>第 4 道：保险丝</td><td>超过 40 步，或总耗时超过 600 秒</td><td><code>status="aborted"</code>，带 <code>reason</code> 说明原因</td></tr>
+    <tr><td>第 5 道：客户端创建</td><td>环境变量里没有 API key</td><td><code>RuntimeError</code> <strong>真的抛出</strong>，<code>run()</code> 根本不启动</td></tr>
+  </tbody>
+</table>
+<p><strong>前四道和第五道是两类东西：</strong></p>
+<ul>
+  <li><strong>前四道是「把错误变成模型的输入」。</strong>它们都不让异常越过循环边界。</li>
+  <li><strong>第五道是「配置错误，直接抛出去」。</strong>它发生在循环启动之前，属于配置层面，模型无论怎么重规划都修不好，所以直接给调用方看。</li>
+</ul>
+
+<h3>3.2 第 2 道防线的实际代码</h3>
+<pre><code>def _execute(self, name, args):
+    func = self.registry.get(name)
+    if func is None:
+        # 模型幻觉调用不存在的工具
+        return f"Error: unknown tool '{name}'. Available: {sorted(self.registry)}"
+
+    try:
+        result = func(**args)
+    except TypeError as exc:
+        return f"Error: bad arguments for '{name}': {exc}"
+    except Exception as exc:
+        return f"Error: {type(exc).__name__}: {exc}"
+
+    if isinstance(result, str):
+        return result
+    return json.dumps(result, ensure_ascii=False, default=str)</code></pre>
+<p>三个 <code>except</code> 分支统统不 <code>raise</code>，全部拼成字符串返回。</p>
+
+<h3>3.3 为什么不把异常抛出去</h3>
+<p>因为<strong>循环里能自我修复的只有模型。</strong></p>
+<p>如果异常抛到 <code>run()</code> 外面，整个循环就死了，模型再也不知道刚才那一步失败了。反过来，把「你刚才那个工具名不存在」当一条普通消息喂回去，模型下一轮通常会自己换个工具或改参数 —— 这才是真正的错误处理，而不是把错误吞掉。</p>
+<p>同理，第 1 道防线让每个工具自己把错误包装成 <code>{"status":"error",...}</code>，是为了让错误信息<strong>出现在工具结果的常规位置上</strong>，模型读起来和其他正常结果没有格式差异，不需要额外的解析逻辑。</p>
+
+<h3>3.4 躲在错误处理背后的两条契约</h3>
+<p>文件开头的注释里写死了两条契约，上面五道防线都是它们的落地：</p>
+<table>
+  <thead>
+    <tr><th></th><th>契约</th><th>落地位置</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>A</td><td>工具失败<strong>不抛异常</strong>，返回 <code>{"status":"error","message":...}</code></td><td>全部 16 个域工具</td></tr>
+    <tr><td>B</td><td>判定类工具返回<strong>逐条理由</strong>，不是光给一个布尔值</td><td><code>check_hard_constraints</code>、<code>filter_postings</code></td></tr>
+  </tbody>
+</table>
+<p>契约 B 是「三态判定」能成立的前提：<code>filter_postings</code> 每条结果里都带 <code>unverified</code> 字段，模型才看得见「这几条我没法替你核实」，而不是只拿到一个 <code>false</code> 却不知道为什么。</p>
+
+<hr>
+
+<h2 id="s4">4. 运行结束的三种状态</h2>
+<p>三种结局都会走同一个 <code>_finalize</code>（2832）。它顺手还做一件事：</p>
+<pre><code>submission = None
+for rec in reversed(self.trace):
+    if rec["tool"] == "submit_recommendation":
+        try:
+            submission = json.loads(rec["result"])
+        except (json.JSONDecodeError, TypeError):
+            submission = None
+        break</code></pre>
+<p><strong>从后往前扫 <code>trace</code>，找最后一次 <code>submit_recommendation</code>，把它的结果填进 <code>result["submission"]</code>。</strong></p>
+<p>这么做的理由和评测有关：判分只看最终状态，<strong>嘴说了不算，工具调了才算</strong>。即使模型在文字里写「我已提交以下岗位」，只要它没真的调用 <code>submit_recommendation</code>，<code>submission</code> 就是 <code>None</code>。反过来，<code>trace</code> 是循环自己记的流水，比模型的自然语言可信。</p>
+<p>注意 <code>reversed()</code> 和 <code>break</code>：取的是<strong>最后一次</strong>调用，因为模型可能先提交一次、发现漏了又提交一次，以后者为准。</p>
+
+<hr>
+
+<h2 id="s5">5. 容易误解的几个点</h2>
+
+<p><strong>Q1：循环里为什么没有重试逻辑？</strong></p>
+<p>因为重试决策属于模型。工具返回 <code>Error: ...</code> 之后，模型看到这条消息，下一轮可能换个参数重试、可能换个数据源、也可能改用别的工具。在循环里硬编码重试会剥夺这个判断权，还会掩盖真正的失败。唯一被明确写进提示词的是 <code>source='boss'</code> 永远失败（<code>ANT_BOT</code>）—— 这个不是靠循环判断，是靠提示词告诉模型「别重试它，换数据源」。</p>
+
+<p><strong>Q2：为什么没有用户档案类？</strong></p>
+<p>用户条件只有一个来源：<strong>task 文本</strong>。第一步固定调用 <code>save_requirements</code> 把 task 里明确说过的条件记下来，后续所有判定读这份记录。这样做的直接后果是：task 里没提「时长」，就不能默认 12 周；没提「专业」，就不能自己填一个。凭空补一个「常见值」，得到的会是一个看起来合理、实则编造的答案。</p>
+<p>由此产生了<strong>三态判定</strong>：</p>
+<table>
+  <thead>
+    <tr><th>判定值</th><th>含义</th><th>对推荐的影响</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>True</code></td><td>已核实满足</td><td>通过</td></tr>
+    <tr><td><code>False</code></td><td>已核实不满足</td><td>阻断</td></tr>
+    <tr><td><code>None</code></td><td>信息缺失，无法核实</td><td><strong>不阻断</strong>，但必须在最终答案里列出</td></tr>
+  </tbody>
+</table>
+<p>把「没说」当成「不符合」，会静默丢掉大量本来合格的岗位。</p>
+
+<p><strong>Q3：为什么 <code>client</code> 要延迟创建？</strong></p>
+<p><code>self._client = None</code>，真正的客户端在 <code>client</code> 这个 property 里第一次被访问时才建。如果在 <code>__init__</code> 里就建，那么只要 <code>new</code> 一个 agent 就强制要求 API key，连不联网的离线自检都跑不起来。</p>
+
+<p><strong>Q4：为什么 <code>schemas</code> 和 <code>registry</code> 分开存？</strong></p>
+<p><code>registry</code> 是「名字 → 可调用对象」，不出网络；<code>schemas</code> 是给模型看的 JSON Schema，才出网络。分开存是为了避免把函数对象塞进发给模型的请求里。同理，<code>registry</code> 里的 <code>func</code> 都已经套过 <code>_serialize</code>，调用后直接拿到 JSON 字符串。</p>
+
+<hr>
+
+<h2 id="s6">6. 代码位置索引</h2>
+<table>
+  <thead>
+    <tr><th>名称</th><th>行号</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>POLICY_TEXT</code></td><td>183</td><td>角色 + 政策 + 工作流程，拼进系统提示词</td></tr>
+    <tr><td><code>_serialize</code></td><td>1760</td><td>把工具返回值统一转成 JSON 字符串</td></tr>
+    <tr><td><code>INTERNSHIP_TOOLS</code></td><td>1801</td><td>16 个工具的定义（A 抓取 6 / B 解析 3 / C 筛选 3 / D 通用 4）</td></tr>
+    <tr><td><code>AgentConfig</code></td><td>2537</td><td>模型、温度、<code>MAX_STEPS</code>、<code>TIMEOUT</code> 等配置</td></tr>
+    <tr><td><code>AGENT_SYSTEM_PROMPT</code></td><td>2584</td><td>角色 + <code>POLICY_TEXT</code> + <code>AGENT_WORKFLOW_HINTS</code></td></tr>
+    <tr><td><code>InternshipSearchAgent</code></td><td>2609</td><td>循环本体</td></tr>
+    <tr><td><code>__init__</code></td><td>2622</td><td>初始化，读回历史条件</td></tr>
+    <tr><td><code>client</code> / <code>_build_client</code></td><td>2685 / 2690</td><td>延迟创建模型客户端；缺 key 时抛 <code>RuntimeError</code></td></tr>
+    <tr><td><code>_call_llm</code></td><td>2709</td><td>发一次请求</td></tr>
+    <tr><td><code>_execute</code></td><td>2721</td><td>执行单个工具，任何异常转字符串（第 2 道防线）</td></tr>
+    <tr><td><code>run</code></td><td>2747</td><td>主循环</td></tr>
+    <tr><td><code>_finalize</code></td><td>2832</td><td>收尾，回溯 <code>trace</code> 取提交记录</td></tr>
+    <tr><td><code>summary</code></td><td>2866</td><td>一行摘要</td></tr>
+    <tr><td><code>save_report</code></td><td>2879</td><td>把 task / 条件 / 结果 / 完整轨迹落盘</td></tr>
+    <tr><td><code>run_agent</code></td><td>2917</td><td>一行启动的对外接口</td></tr>
+    <tr><td><code>TASKS</code></td><td>2193</td><td>离线自检用的任务集</td></tr>
+    <tr><td><code>grade</code></td><td>2361</td><td>判分函数（F1）</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2 id="s7">7. 怎么跑起来</h2>
+
+<p><span class="tag">离线</span>自检（不联网、不花额度）：</p>
+<pre><code>cd scheduler
+python domain_internship_search.py</code></pre>
+<p>会打印工具总数、逐个列出 16 个工具，然后遍历 <code>TASKS</code> 验证「条件来自 task」这条链路。自检会把落盘路径临时指向 <code>data/_selftest_requirements.json</code>，不覆盖你手工维护的 <code>data/requirements.json</code>。</p>
+
+<p><span class="tag">联网</span>跑真实任务（联网 + 花 API 额度）：</p>
+<pre><code>cd scheduler
+python domain_internship_search.py --agent 帮我找 2027 暑期新加坡实习，数学专业，2028 年毕业，可实习期 5 月到 8 月，至少 8 周</code></pre>
+<p>跑完会打印最终答案与一行摘要，并把完整轨迹写入 <code>reports/agent_last_run.json</code>。</p>
+
+<p><span class="tag">调用</span>在别的程序里使用：</p>
+<pre><code>from domain_internship_search import run_agent
+
+agent, answer = run_agent("帮我找 2027 暑期新加坡实习")
+print(agent.summary())
+# [done] steps=16 tool_calls=48 pool=10 submitted=3</code></pre>
+
+<blockquote>
+  <p>提示词里写全了条件时，筛选结果干净；只写「帮我找个实习」时，结果里会出现大量 <code>unverified</code> —— 这是正确行为，不是故障。</p>
+</blockquote>
+
+</div>
+</body>
+</html>

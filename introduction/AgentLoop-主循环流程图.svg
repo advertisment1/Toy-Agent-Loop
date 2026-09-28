@@ -1,0 +1,80 @@
+<svg viewBox="0 0 680 732" width="680" height="732" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>实习搜索 agent 主循环流程</title>
+<desc>初始化后进入 for 循环：调用模型，若模型要调工具则逐个执行并把结果以 tool 消息回填历史，然后进入下一轮；若模型不再调工具则收尾返回 done；若超时或步数用尽则中止返回 aborted。工具内部任何失败都返回 Error 字符串而不抛异常。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect x="0" y="0" width="680" height="732" fill="#ffffff"/>
+
+<path d="M230 684 L230 712 L70 712 L70 192 L110 192" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="150" y="698" text-anchor="middle" dominant-baseline="central" style="font-family:var(--font-sans,sans-serif);font-size:12px;font-weight:400;fill:#5F5E5A">下一轮</text>
+
+<path d="M230 104 L230 164" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M230 220 L230 280" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M230 336 L230 396" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M230 452 L230 512" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M230 568 L230 628" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M350 192 L430 192" fill="none" stroke="#A32D2D" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M350 424 L430 424" fill="none" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M350 540 L430 540" fill="none" stroke="#A32D2D" stroke-width="0.5" stroke-dasharray="4 3"/>
+
+<text x="388" y="176" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">超时</text>
+<text x="388" y="408" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">否</text>
+<text x="242" y="482" text-anchor="start" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">是</text>
+
+<g>
+<rect x="110" y="48" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="230" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">① 初始化</text>
+<text x="230" y="84" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">读 task、建工具表、读回旧条件</text>
+</g>
+
+<g>
+<rect x="110" y="164" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="230" y="182" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">② for step in range(MAX_STEPS)</text>
+<text x="230" y="200" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">每轮开头先查是否已超时</text>
+</g>
+
+<g>
+<rect x="110" y="280" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="230" y="298" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">③ 调模型</text>
+<text x="230" y="316" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">发出 messages 与工具表</text>
+</g>
+
+<g>
+<rect x="110" y="396" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="230" y="414" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">④ 模型要调工具？</text>
+<text x="230" y="432" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">tool_calls 是否为空</text>
+</g>
+
+<g>
+<rect x="110" y="512" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="230" y="530" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">⑤ 执行工具</text>
+<text x="230" y="548" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">_execute() 逐个执行</text>
+</g>
+
+<g>
+<rect x="110" y="628" width="240" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="230" y="646" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A">⑥ 回填消息历史</text>
+<text x="230" y="664" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">回填为 role=tool 消息</text>
+</g>
+
+<g>
+<rect x="430" y="164" width="190" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="525" y="182" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#791F1F">finalize('aborted')</text>
+<text x="525" y="200" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">reason=timeout / max_steps</text>
+</g>
+
+<g>
+<rect x="430" y="396" width="190" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="525" y="414" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#0C447C">finalize('done')</text>
+<text x="525" y="432" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">直接作答即最终答案</text>
+</g>
+
+<g>
+<rect x="430" y="512" width="190" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="525" y="530" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:14px;font-weight:500;fill:#791F1F">工具内部出错怎么办</text>
+<text x="525" y="548" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">不抛异常，只回 Error 串</text>
+</g>
+</svg>

@@ -1,0 +1,62 @@
+<svg viewBox="0 0 680 414" width="680" height="414" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>AgentLoop 的错误处理分层</title>
+<desc>错误处理分五层：域工具内部返回 error 字典不抛异常；循环 _execute 把任何异常包成 Error 字符串；tool_calls 的 arguments 解析失败时降级为空字典；两根保险丝在超时或步数用尽时中止；客户端创建阶段缺 API key 会真正抛出。</desc>
+<rect x="0" y="0" width="680" height="414" fill="#ffffff"/>
+
+<rect x="40" y="48" width="146" height="36" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="113" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">防线</text>
+<rect x="190" y="48" width="236" height="36" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="308" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">什么会出错</text>
+<rect x="430" y="48" width="210" height="36" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="535" y="66" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">怎么处理</text>
+
+<rect x="40" y="90" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="113" y="108" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">域工具内部</text>
+<text x="113" y="126" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">第 1 道</text>
+<rect x="190" y="90" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="308" y="108" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:400;fill:#791F1F">参数非法、session 或岗位找不到</text>
+<text x="308" y="126" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">网络抓取失败</text>
+<rect x="430" y="90" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="535" y="108" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">返回 status=error</text>
+<text x="535" y="126" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">不抛异常</text>
+
+<rect x="40" y="152" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="113" y="170" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">循环 _execute</text>
+<text x="113" y="188" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">第 2 道</text>
+<rect x="190" y="152" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="308" y="170" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:400;fill:#791F1F">工具名幻觉、参数类型不符</text>
+<text x="308" y="188" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">工具内部真的抛了异常</text>
+<rect x="430" y="152" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="535" y="170" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">包成 Error 字符串</text>
+<text x="535" y="188" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">模型自己重规划</text>
+
+<rect x="40" y="214" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="113" y="232" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">参数解析</text>
+<text x="113" y="250" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">第 3 道</text>
+<rect x="190" y="214" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="308" y="232" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:400;fill:#791F1F">arguments 不是合法 JSON</text>
+<text x="308" y="250" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">模型吐出的参数被截断</text>
+<rect x="430" y="214" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="535" y="232" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">降级成空字典</text>
+<text x="535" y="250" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">交给第 2 道报错</text>
+
+<rect x="40" y="276" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="113" y="294" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">保险丝</text>
+<text x="113" y="312" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">第 4 道</text>
+<rect x="190" y="276" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="308" y="294" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:400;fill:#791F1F">超过 40 步</text>
+<text x="308" y="312" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">或总耗时超过 600 秒</text>
+<rect x="430" y="276" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#E6F1FB;stroke:#185FA5"/>
+<text x="535" y="294" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#0C447C">status=aborted</text>
+<text x="535" y="312" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#185FA5">带 reason 说明原因</text>
+
+<rect x="40" y="338" width="146" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="113" y="356" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">客户端创建</text>
+<text x="113" y="374" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">循环之外</text>
+<rect x="190" y="338" width="236" height="56" rx="8" stroke-width="0.5" style="fill:#FCEBEB;stroke:#A32D2D"/>
+<text x="308" y="356" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:400;fill:#791F1F">环境变量里没有 API key</text>
+<text x="308" y="374" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#A32D2D">配置层面的错误</text>
+<rect x="430" y="338" width="210" height="56" rx="8" stroke-width="0.5" style="fill:#F1EFE8;stroke:#888780"/>
+<text x="535" y="356" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:13px;font-weight:500;fill:#2C2C2A">RuntimeError 抛出</text>
+<text x="535" y="374" text-anchor="middle" dominant-baseline="central" style="font-family:sans-serif;font-size:12px;font-weight:400;fill:#5F5E5A">run() 根本不启动</text>
+</svg>
