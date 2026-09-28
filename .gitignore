@@ -14,4 +14,4 @@ env/
 logs/
 *.log
 output/
-.json
+*.json
